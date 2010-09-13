@@ -5,12 +5,14 @@ use warnings;
 
 use base 'Mojo::Base';
 
-our $VERSION = '0.0004';
+our $VERSION = '0.0005';
 
 use MojoX::Validator::Bulk;
 use MojoX::Validator::Condition;
 use MojoX::Validator::Field;
 use MojoX::Validator::Group;
+
+require Carp;
 
 __PACKAGE__->attr('fields'     => sub { {} });
 __PACKAGE__->attr('bulk');
@@ -56,6 +58,11 @@ sub group {
     my $self   = shift;
     my $name   = shift;
     my $fields = shift;
+
+    if (my($exists) = grep { $_->name eq $name } @{$self->groups} ) {
+        Carp::croak "Fields of group '$name' already defined." if $fields;
+        return $exists;
+    }
 
     $fields = [map { $self->fields->{$_} } @$fields];
 
@@ -157,7 +164,8 @@ sub values {
     my $values = {};
 
     foreach my $field (values %{$self->fields}) {
-        $values->{$field->name} = $field->value if defined $field->value;
+        $values->{$field->name} = $field->value
+          if defined $field->value && !$field->error;
     }
 
     return $values;
@@ -192,6 +200,7 @@ MojoX::Validator - Validator for Mojolicious
 
     $validator->validate($values_hashref);
     my $errors_hashref = $validator->errors;
+    my $pass_error = $validator->group('passwords')->error;
     my $validated_values_hashref = $validator->values;
 
 =head1 DESCRIPTION
@@ -201,25 +210,31 @@ generation, B<NO> other stuff that does something else. Only data validation!
 
 =head1 FEATURES
 
-=over
+=over 4
 
-    * Validates data that is presented as a hash reference
-    * Multiple values
-    * Field registration
-    * Group validation
-    * Conditional validation
+    Validates data that is presented as a hash reference
+
+    Multiple values
+
+    Field registration
+
+    Group validation
+
+    Conditional validation
 
 =back
 
 =head1 CONVENTIONS
 
-=over
+=over 4
 
-    * A value is considered empty when its value is B<NOT> C<undef>, C<''> or
+    A value is considered empty when its value is B<NOT> C<undef>, C<''> or
     contains only spaces
-    * If a value is not required and during validation is empty there is B<NO>
+
+    If a value is not required and during validation is empty there is B<NO>
     error
-    * If a value is passed as an array reference and an appropriate field is
+
+    If a value is passed as an array reference and an appropriate field is
     not multiple, than only the first value is taken, otherwise every value of
     the array reference is checked.
 
@@ -243,7 +258,7 @@ Created a new L<MojoX::Validator> object.
 
     $validator->clear_errors;
 
-    Clear errors.
+Clears errors.
 
 =head2 C<field>
 
@@ -267,7 +282,7 @@ call C<each> method to apply setting to multiple fields.
     $validator->group('all_or_none' => [qw/foo bar/])->equal;
 
 Registers a group constraint that will be called on group of fields. If group
-validation failes the C<errors> hashref will have the B<group> name with an
+validation fails the C<errors> hashref will have the B<group> name with an
 appropriate error message, B<NOT> fields' names.
 
 =head2 C<when>
@@ -315,6 +330,16 @@ are ignored.
 =head1 AUTHOR
 
 Viacheslav Tykhanovskyi, C<vti@cpan.org>.
+
+=head1 CREDITS
+
+In alphabetical order:
+
+Alex Voronov
+
+Anatoliy Lapitskiy
+
+Yaroslav Korshak
 
 =head1 COPYRIGHT AND LICENSE
 

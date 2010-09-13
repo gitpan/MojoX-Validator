@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               MojoX-Validator
-version:            0.0004
+version:            0.0005
 abstract:           Data validator
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>

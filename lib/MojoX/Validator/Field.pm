@@ -5,20 +5,27 @@ use warnings;
 
 use base 'Mojo::Base';
 
+use MojoX::Validator::Bulk;
 use MojoX::Validator::ConstraintBuilder;
 
 __PACKAGE__->attr('name');
-__PACKAGE__->attr(['required', 'multiple'] => 0);
+__PACKAGE__->attr('required' => 0);
 __PACKAGE__->attr('error');
 __PACKAGE__->attr('trim' => 1);
 __PACKAGE__->attr(constraints => sub { [] });
 
 # Shortcuts
 sub callback { shift->constraint('callback' => @_) }
+sub date     { shift->constraint('date'     => @_) }
 sub email    { shift->constraint('email'    => @_) }
+sub equal    { shift->constraint('equal'    => @_) }
 sub in       { shift->constraint('in'       => @_) }
+sub ip       { shift->constraint('ip'       => @_) }
 sub length   { shift->constraint('length'   => @_) }
 sub regexp   { shift->constraint('regexp'   => @_) }
+sub subset   { shift->constraint('subset'   => @_) }
+sub time     { shift->constraint('time  '   => @_) }
+sub unique   { shift->constraint('unique'   => @_) }
 
 sub constraint {
     my $self = shift;
@@ -26,6 +33,16 @@ sub constraint {
     my $constraint = MojoX::Validator::ConstraintBuilder->build(@_);
 
     push @{$self->constraints}, $constraint;
+
+    return $self;
+}
+
+sub multiple {
+    my $self = shift;
+
+    return $self->{multiple} unless @_;
+
+    $self->{multiple} = [splice @_, 0, 2];
 
     return $self;
 }
@@ -47,9 +64,7 @@ sub value {
 
     return $self unless $self->trim;
 
-    foreach (
-        ref($self->{value}) eq 'ARRAY' ? @{$self->{value}} : ($self->{value}))
-    {
+    foreach ($self->multiple ? @{$self->{value}} : $self->{value}) {
         s/^\s+//;
         s/\s+$//;
     }
@@ -64,17 +79,24 @@ sub is_valid {
 
     $self->error('REQUIRED'), return 0 if $self->required && $self->is_empty;
 
+    my @values = $self->multiple ? @{$self->value} : $self->value;
+
+    if (my $multiple = $self->multiple) {
+        my ($min, $max) = @$multiple;
+
+        $self->error('NOT_ENOUGH'), return 0 if @values < $min;
+        $self->error('TOO_MUCH'), return 0
+          if defined $max ? @values > $max : $min != 1 && @values != $min;
+    }
+
     return 1 if $self->is_empty;
 
     foreach my $c (@{$self->constraints}) {
-        my @values =
-          ref $self->value eq 'ARRAY' ? @{$self->value} : ($self->value);
-
         foreach my $value (@values) {
             my ($ok, $error) = $c->is_valid($value);
 
             unless ($ok) {
-                $self->error( $error ? $error : $c->error);
+                $self->error($error ? $error : $c->error);
                 return 0;
             }
         }
@@ -93,6 +115,13 @@ sub clear_value {
     my $self = shift;
 
     delete $self->{value};
+}
+
+sub each {
+    my $self = shift;
+
+    my $bulk = MojoX::Validator::Bulk->new(fields => [$self]);
+    return $bulk->each(@_);
 }
 
 sub is_defined {
@@ -135,12 +164,29 @@ Field object. Used internally.
 
 Field error.
 
+=head2 C<each>
+
+    $field->each(sub { shift->required(1) });
+
+Each method as described in L<MojoX::Validator::Bulk>. Added here for
+convenience.
+
 =head2 C<multiple>
 
     $field->multiple(1);
 
 Field can have multiple values. Use this when you want to allow array reference
-as value.
+as a value.
+
+    $field->multiple(2, 5);
+
+If you want to control how many multiple values there can be set C<min> and
+C<max> values.
+
+    $field->multiple(10);
+
+When C<max> value is omitted and is not C<1> (because it doesn't make sense),
+number of values must be equal to this value.
 
 =head2 C<name>
 
