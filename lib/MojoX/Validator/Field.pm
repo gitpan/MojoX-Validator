@@ -8,24 +8,14 @@ use base 'Mojo::Base';
 use MojoX::Validator::Bulk;
 use MojoX::Validator::ConstraintBuilder;
 
-__PACKAGE__->attr('name');
-__PACKAGE__->attr('required' => 0);
-__PACKAGE__->attr('error');
-__PACKAGE__->attr('trim' => 1);
-__PACKAGE__->attr(constraints => sub { [] });
+our $AUTOLOAD;
 
-# Shortcuts
-sub callback { shift->constraint('callback' => @_) }
-sub date     { shift->constraint('date'     => @_) }
-sub email    { shift->constraint('email'    => @_) }
-sub equal    { shift->constraint('equal'    => @_) }
-sub in       { shift->constraint('in'       => @_) }
-sub ip       { shift->constraint('ip'       => @_) }
-sub length   { shift->constraint('length'   => @_) }
-sub regexp   { shift->constraint('regexp'   => @_) }
-sub subset   { shift->constraint('subset'   => @_) }
-sub time     { shift->constraint('time  '   => @_) }
-sub unique   { shift->constraint('unique'   => @_) }
+__PACKAGE__->attr('error');
+__PACKAGE__->attr('name');
+__PACKAGE__->attr('required'  => 0);
+__PACKAGE__->attr(constraints => sub { [] });
+__PACKAGE__->attr(messages    => sub { {} });
+__PACKAGE__->attr(trim        => 1);
 
 sub constraint {
     my $self = shift;
@@ -35,6 +25,13 @@ sub constraint {
     push @{$self->constraints}, $constraint;
 
     return $self;
+}
+
+sub message {
+    my $self    = shift;
+    my $message = shift;
+
+    return $self->messages->{$message} || $message;
 }
 
 sub multiple {
@@ -77,15 +74,17 @@ sub is_valid {
 
     $self->error('');
 
-    $self->error('REQUIRED'), return 0 if $self->required && $self->is_empty;
+    $self->error($self->message('REQUIRED')), return 0
+      if $self->required && $self->is_empty;
 
     my @values = $self->multiple ? @{$self->value} : $self->value;
 
     if (my $multiple = $self->multiple) {
         my ($min, $max) = @$multiple;
 
-        $self->error('NOT_ENOUGH'), return 0 if @values < $min;
-        $self->error('TOO_MUCH'), return 0
+        $self->error($self->message('NOT_ENOUGH')), return 0
+          if @values < $min;
+        $self->error($self->message('TOO_MUCH')), return 0
           if defined $max ? @values > $max : $min != 1 && @values != $min;
     }
 
@@ -96,7 +95,7 @@ sub is_valid {
             my ($ok, $error) = $c->is_valid($value);
 
             unless ($ok) {
-                $self->error($error ? $error : $c->error);
+                $self->error($error ? $error : $self->message($c->error));
                 return 0;
             }
         }
@@ -138,6 +137,20 @@ sub is_empty {
     return $self->value eq '' ? 1 : 0;
 }
 
+sub AUTOLOAD {
+    my $self = shift;
+
+    my $method = $AUTOLOAD;
+
+    return if $method =~ /^[A-Z]+?$/;
+    return if $method =~ /^_/;
+    return if $method =~ /(?:\:*?)DESTROY$/;
+
+    $method = (split '::' => $method)[-1];
+
+    return $self->constraint($method => @_);
+}
+
 1;
 __END__
 
@@ -156,6 +169,10 @@ MojoX::Validator::Field - Field object
 Field object. Used internally.
 
 =head1 ATTRIBUTES
+
+=head2 C<messages>
+
+Error messages.
 
 =head2 C<error>
 
@@ -235,18 +252,6 @@ Clears field's value.
 
 Adds a new field's constraint.
 
-=head2 C<email>
-
-Shortcut
-
-    $field->constraint(email => @_);
-
-=head2 C<in>
-
-Shortcut
-
-    $field->constraint(in => @_);
-
 =head2 C<is_defined>
 
     my $defined = $field->is_defined;
@@ -263,17 +268,9 @@ Checks whether field's value is empty.
 
 Checks whether all field's constraints are valid.
 
-=head2 C<length>
+=head2 C<message>
 
-Shortcut
-
-    $field->constraint(length => @_);
-
-=head2 C<regexp>
-
-Shortcut
-
-    $field->constraint(regexp => @_);
+Holds error message.
 
 =head2 C<value>
 
@@ -284,6 +281,6 @@ Set or get field's value.
 
 =head1 SEE ALSO
 
-L<MojoX::Validator>, L<MojoX::Validator::Constraint>
+L<MojoX::Validator>, L<MojoX::Validator::Constraint>.
 
 =cut

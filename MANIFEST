@@ -1,3 +1,4 @@
+lib/Mojolicious/Plugin/Validator.pm
 lib/MojoX/Validator.pm
 lib/MojoX/Validator/Bulk.pm
 lib/MojoX/Validator/Condition.pm
@@ -7,11 +8,13 @@ lib/MojoX/Validator/Constraint/Date.pm
 lib/MojoX/Validator/Constraint/Email.pm
 lib/MojoX/Validator/Constraint/Equal.pm
 lib/MojoX/Validator/Constraint/In.pm
+lib/MojoX/Validator/Constraint/Ip.pm
 lib/MojoX/Validator/Constraint/Length.pm
 lib/MojoX/Validator/Constraint/Regexp.pm
 lib/MojoX/Validator/Constraint/Subset.pm
 lib/MojoX/Validator/Constraint/Time.pm
 lib/MojoX/Validator/Constraint/Unique.pm
+lib/MojoX/Validator/Constraint/Url.pm
 lib/MojoX/Validator/ConstraintBuilder.pm
 lib/MojoX/Validator/Field.pm
 lib/MojoX/Validator/Group.pm
@@ -24,13 +27,16 @@ t/constraint/date.t
 t/constraint/email.t
 t/constraint/equal.t
 t/constraint/in.t
+t/constraint/ip.t
 t/constraint/length.t
 t/constraint/regexp.t
 t/constraint/subset.t
 t/constraint/time.t
 t/constraint/unique.t
+t/constraint/url.t
 t/field.t
 t/group.t
+t/plugin.t
 t/pod.t
 t/pod_coverage.t
 t/validator-bulk.t

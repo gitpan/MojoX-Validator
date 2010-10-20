@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               MojoX-Validator
-version:            0.0005
+version:            0.0006
 abstract:           Data validator
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>
@@ -9,8 +9,8 @@ distribution_type:  module
 configure_requires:  {}
 build_requires:  {}
 requires:
-    Mojo:  0.999926
-    perl:  5.008007
+    Mojolicious:  0.999930
+    perl:         5.008007
 resources:
     license:     http://dev.perl.org/licenses/
     repository:  http://github.com/vti/mojox-validator
