@@ -5,16 +5,45 @@ use warnings;
 
 use base 'Mojolicious::Plugin';
 
+use Mojo::ByteStream;
+use Mojo::Loader;
 use MojoX::Validator;
+
+require Carp;
 
 sub register {
     my ($self, $app, $conf) = @_;
 
     $conf ||= {};
-    $conf->{messages} ||= {};
 
-    $app->helper(create_validator =>
-          sub { MojoX::Validator->new(messages => $conf->{messages}) });
+    $app->helper(
+        create_validator => sub {
+            my $self       = shift;
+            my $class_name = shift;
+
+            $class_name ||= 'MojoX::Validator';
+
+            unless ($class_name =~ m/[A-Z]/) {
+                my $namespace = ref($self->app) . '::';
+                $namespace = '' if $namespace =~ m/^Mojolicious::Lite/;
+
+                $class_name = join '' => $namespace,
+                  Mojo::ByteStream->new($class_name)->camelize;
+            }
+
+            my $e = Mojo::Loader->new->load($class_name);
+
+            Carp::croak qq/Can't load validator '$class_name': / . $e->message
+              if ref $e;
+
+            Carp::croak qq/Can't find validator '$class_name'/ if $e;
+
+            Carp::croak qq/Wrong validator '$class_name' isa/
+              unless $class_name->isa('MojoX::Validator');
+
+            return $class_name->new(%$conf, @_);
+        }
+    );
 
     $app->helper(
         validate => sub {
@@ -29,6 +58,18 @@ sub register {
             $self->stash(validator_errors => $validator->errors);
 
             return;
+        }
+    );
+
+    $app->helper(
+        validator_has_errors => sub {
+            my $self = shift;
+
+            my $errors = $self->stash('validator_errors');
+
+            return 0 if !$errors || !keys %$errors;
+
+            return 1;
         }
     );
 
@@ -72,7 +113,7 @@ Mojolicious::Plugin::Validator - Plugin for MojoX::Validator
         my $validator = $self->create_validator;
         $validator->field('username')->required(1)->length(3, 20);
 
-        return unless $validator->validate;
+        return unless $self->validate($validate);
 
         # Create a user for example
         ...
@@ -82,10 +123,13 @@ Mojolicious::Plugin::Validator - Plugin for MojoX::Validator
     __DATA__
 
     @@ user.html.ep
+    %= if (validator_has_errors) {
+        <div class="error">Please, correct the errors below.</div>
+    % }
     %= form_for 'user' => begin
-        <%= label 'username' => begin %>Username<% end %>
-        <%= input 'username' %>
-        <%= validator_error 'username' %>
+        <label for="username">Username</label><br />
+        <%= input_tag 'username' %><br />
+        <%= validator_error 'username' %><br />
 
         <%= submit_button %>
     % end
@@ -116,6 +160,47 @@ Replace default errors.
 =head2 Helpers
 
 =over
+
+=item create_validator
+
+    my $validator = $self->create_validator;
+    $validator->field('username')->required(1)->length(3, 20);
+
+Create L<MojoX::Validator>.
+
+    $self->create_validator('will-be_decamelized');
+    $self->create_validator('Custom::Class');
+
+Create a validator from a class derived from L<MojoX::Validator>. This way
+preconfigured validators can be used.
+
+=back
+
+=over
+
+=item validate
+
+    $self->validate($validator);
+
+Validate parameters with provided validator and automatically set errors.
+
+=back
+
+=over
+
+=item validator_has_errors
+
+    %= if (validator_has_errors) {
+        <div class="error">Please, correct the errors below.</div>
+    % }
+
+Check if there are any errors.
+
+=back
+
+=over
+
+=item validator_error
 
     <%= validator_error 'username' %>
 

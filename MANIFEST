@@ -20,6 +20,7 @@ lib/MojoX/Validator/Field.pm
 lib/MojoX/Validator/Group.pm
 Makefile.PL
 MANIFEST			This list of files
+MANIFEST.SKIP
 t/condition.t
 t/constraint.t
 t/constraint/callback.t
