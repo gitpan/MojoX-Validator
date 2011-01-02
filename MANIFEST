@@ -44,6 +44,7 @@ t/pod.t
 t/pod_coverage.t
 t/validator-bulk.t
 t/validator-condition.t
+t/validator-explicit.t
 t/validator-group.t
 t/validator.t
 META.yml                                 Module meta-data (added by MakeMaker)

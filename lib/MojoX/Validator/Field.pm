@@ -12,7 +12,11 @@ our $AUTOLOAD;
 
 __PACKAGE__->attr('error');
 __PACKAGE__->attr('name');
+__PACKAGE__->attr('inflate');
+__PACKAGE__->attr('deflate');
 __PACKAGE__->attr('required'  => 0);
+__PACKAGE__->attr('unknown'   => 0);
+__PACKAGE__->attr('explicit'  => 0);
 __PACKAGE__->attr(constraints => sub { [] });
 __PACKAGE__->attr(messages    => sub { {} });
 __PACKAGE__->attr(trim        => 1);
@@ -26,7 +30,6 @@ sub constraint {
 
     return $self;
 }
-
 
 sub message {
     my $self    = shift;
@@ -91,10 +94,15 @@ sub is_valid {
 
     $self->error('');
 
+    $self->error($self->_message('NOT_SPECIFIED')), return 0
+      if $self->explicit && $self->unknown;
+
     $self->error($self->_message('REQUIRED')), return 0
       if $self->required && $self->is_empty;
 
     my @values = $self->multiple ? @{$self->value} : $self->value;
+
+    @values = map { &{$self->inflate} } @values if $self->inflate;
 
     if (my $multiple = $self->multiple) {
         my ($min, $max) = @$multiple;
@@ -117,6 +125,10 @@ sub is_valid {
             }
         }
     }
+    
+    @values = map { &{$self->deflate} } @values if $self->deflate;
+
+    $self->value($self->multiple ? \@values : $values[0]);
 
     return 1;
 }
@@ -191,6 +203,12 @@ Field object. Used internally.
 
 Error messages.
 
+=head2 C<deflate>
+
+    $field->deflate(sub { s/foo/bar/ });
+
+Use this when you want to change value of field after validation.
+
 =head2 C<error>
 
     $field->error('Invalid input');
@@ -204,6 +222,12 @@ Field error.
 
 Each method as described in L<MojoX::Validator::Bulk>. Added here for
 convenience.
+
+=head2 C<inflate>
+
+    $field->inflate(sub { s/foo/bar/ });
+
+Use this when you want to change value of field before validation.
 
 =head2 C<multiple>
 

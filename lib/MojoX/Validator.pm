@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Mojo::Base';
 
-our $VERSION = '0.0010';
+our $VERSION = '0.0011';
 
 use MojoX::Validator::Bulk;
 use MojoX::Validator::Condition;
@@ -14,7 +14,7 @@ use MojoX::Validator::Group;
 
 require Carp;
 
-__PACKAGE__->attr('bulk');
+__PACKAGE__->attr([qw/bulk explicit has_unknown_params/]);
 __PACKAGE__->attr(conditions => sub { [] });
 __PACKAGE__->attr(fields     => sub { {} });
 __PACKAGE__->attr(groups     => sub { [] });
@@ -35,7 +35,8 @@ sub field {
     foreach my $name (@names) {
         my $field = MojoX::Validator::Field->new(
             name     => $name,
-            messages => $self->messages
+            messages => $self->messages,
+            explicit => $self->explicit,
         );
 
         $self->fields->{$name} = $field;
@@ -125,6 +126,8 @@ sub validate {
 
     $self->clear_errors;
 
+    $self->_flag_unknown($params);
+
     $self->_populate_fields($params);
 
     while (1) {
@@ -142,6 +145,20 @@ sub validate {
     }
 
     return $self->has_errors ? 0 : 1;
+}
+
+sub _flag_unknown {
+    my $self   = shift;
+    my $params = shift;
+
+    foreach my $param (keys %$params) {
+        if (!defined $self->fields->{$param}) {
+            $self->has_unknown_params(1);
+
+            $self->field($param)->unknown(1)->error($param => 'NOT_SPECIFIED')
+              if $self->explicit;
+        }
+    }
 }
 
 sub _populate_fields {
@@ -247,10 +264,13 @@ generation, B<NO> other stuff that does something else. Only data validation!
 =over 4
 
     A value is considered empty when its value is B<NOT> C<undef>, C<''> or
-    contains only spaces
+    contains only spaces.
 
     If a value is not required and during validation is empty there is B<NO>
-    error
+    error.
+
+    If explicit is set to true, then all values not explicitly required
+    generate an error.
 
     If a value is passed as an array reference and an appropriate field is
     not multiple, than only the first value is taken, otherwise every value of
@@ -259,6 +279,14 @@ generation, B<NO> other stuff that does something else. Only data validation!
 =back
 
 =head1 ATTRIBUTES
+
+=head2 C<explicit>
+
+Causes errors to be generated when unknown parameters exist.
+
+=head2 C<has_unknown_params>
+
+Unknown parameters exist in validated parameter hashref.
 
 =head2 C<messages>
 
@@ -278,13 +306,13 @@ Trim field values. B<ON> by default.
 
     my $validator = MojoX::Validator->new;
 
-Created a new L<MojoX::Validator> object.
+Create a new L<MojoX::Validator> object.
 
 =head2 C<clear_errors>
 
     $validator->clear_errors;
 
-Clears errors.
+Clear errors.
 
 =head2 C<field>
 
@@ -294,10 +322,10 @@ Clears errors.
     $validator->field(qw/foo bar baz/);     # MojoX::Validator::Bulk object is returned
     $validator->field([qw/foo bar baz/]);   # MojoX::Validator::Bulk object is returned
 
-When a single value is passed creates L<MojoX::Validator::Field> object or
-returns an already created field object.
+When a single value is passed create L<MojoX::Validator::Field> object or
+return an already created field object.
 
-When an array or an array reference is passed returns L<MojoX::Validator::Bulk> object. You can
+When an array or an array reference is passed return L<MojoX::Validator::Bulk> object. You can
 call C<each> method to apply setting to multiple fields.
 
     $validator->field(qw/foo bar baz/)->each(sub { shift->required(1) });
@@ -307,7 +335,7 @@ call C<each> method to apply setting to multiple fields.
     $validator->field(qw/foo bar/)->each(sub { shift->required(1) });
     $validator->group('all_or_none' => [qw/foo bar/])->equal;
 
-Registers a group constraint that will be called on group of fields. If group
+Register a group constraint that will be called on group of fields. If group
 validation fails the C<errors> hashref will have the B<group> name with an
 appropriate error message, B<NOT> fields' names.
 
@@ -318,7 +346,7 @@ appropriate error message, B<NOT> fields' names.
     $validator->when('document')->regexp(qr/^1$/)
       ->then(sub { shift->field('number')->required(1) });
 
-Registers a condition that is called when some conditions are met. You can do
+Register a condition that is called when some conditions are met. You can do
 whatever you want in condition's callback. Validation will be remade.
 
 =head2 C<validate>
@@ -327,7 +355,7 @@ whatever you want in condition's callback. Validation will be remade.
     $validator->validate({a => ['b', 'c']});
     $validator->validate({a => ['b', 'c'], b => 'd'});
 
-Accepts and validated a hash reference that represents data that is being
+Accept and validate a hash reference that represents data that is being
 validated. Hash values can be either a C<SCALAR> value or an C<ARRAREF> value,
 which means that a field has multiple values. In case of an array reference, it
 is checked if a field can have multiple values. Otherwise only the first value
@@ -343,7 +371,7 @@ Set a custom error.
 
     $validator->errors; # {a => 'Required'}
 
-Returns a hash reference of errors.
+Return a hash reference of errors.
 
 =head2 C<has_errors>
 
@@ -355,7 +383,7 @@ Check if there are any errors.
 
     $validator->values;
 
-Returns a hash reference of validated values. Only registered fields are returned,
+Return a hash reference of validated values. Only registered fields are returned,
 that means that if some other values were passed to the C<validate> method they
 are ignored.
 
@@ -376,6 +404,8 @@ In alphabetical order:
 Alex Voronov
 
 Anatoliy Lapitskiy
+
+Glen Hinkle
 
 Naoya Ito
 
