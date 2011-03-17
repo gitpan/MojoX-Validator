@@ -21,7 +21,6 @@ lib/MojoX/Validator/Group.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
-README.pod
 t/condition.t
 t/constraint-builder.t
 t/constraint.t
