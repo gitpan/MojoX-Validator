@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               MojoX-Validator
-version:            0.0012
+version:            0.0013
 abstract:           Data validator
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>
@@ -9,8 +9,9 @@ distribution_type:  module
 configure_requires:  {}
 build_requires:  {}
 requires:
-    Mojolicious:  0.999931
-    perl:         5.008007
+    Input::Validator:  0
+    Mojolicious:       0.999931
+    perl:              5.008007
 resources:
     license:     http://dev.perl.org/licenses/
     repository:  http://github.com/vti/mojox-validator
@@ -19,7 +20,7 @@ no_index:
         - t
         - inc
         - t
-generated_by:       ExtUtils::MakeMaker version 6.56
+generated_by:       ExtUtils::MakeMaker version 6.55_02
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4
