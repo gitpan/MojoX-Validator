@@ -40,7 +40,7 @@ use warnings;
 use Test::More;
 
 plan skip_all => 'working sockets required for this test!'
-  unless Mojo::IOLoop->new->generate_port;
+  unless Mojo::IOLoop::Server->new->generate_port;
 plan tests => 34;
 
 use Mojolicious::Lite;

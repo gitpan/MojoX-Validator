@@ -5,11 +5,11 @@ author:
 build_requires: {}
 configure_requires: {}
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.6302, CPAN::Meta::Converter version 2.130880'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142690'
 license: artistic_2
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: MojoX-Validator
 no_index:
   directory:
@@ -17,10 +17,10 @@ no_index:
     - inc
     - t
 requires:
-  Input::Validator: 0
-  Mojolicious: 0.999931
-  perl: 5.008007
+  Input::Validator: '0'
+  Mojolicious: '0.999931'
+  perl: '5.008007'
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/vti/mojox-validator
-version: 0.0014
+version: '0.0015'
